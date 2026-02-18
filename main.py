@@ -6,7 +6,7 @@ import os
 TOKEN = os.getenv('DISCORD_TOKEN')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 # ضع هنا ID الروم الذي تريده (يمكنك جلب الـ ID بضغط كليك يمين على الروم في ديسكورد ثم Copy ID)
-OFFICIAL_CHANNEL_ID = 123456789012345678  # استبدل هذا الرقم بـ ID الروم الخاص بك
+OFFICIAL_CHANNEL_ID = 1473781070783713320  # استبدل هذا الرقم بـ ID الروم الخاص بك
 
 client_ai = Groq(api_key=GROQ_API_KEY)
 
