@@ -29,7 +29,7 @@ async def on_message(message):
                 messages=[
                     {
                         "role": "system",
-                        "content": "أنت حكيم ملحمي تملك قوة النار والبرق، أجب باختصار وقوة."
+                        "content": "انا بوت ذكائ اسالني عن اي شي تريده."
                     },
                     {
                         "role": "user",
