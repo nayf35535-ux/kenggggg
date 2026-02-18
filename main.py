@@ -1,45 +1,49 @@
 import discord
-import google.generativeai as genai
+from groq import Groq
 import os
 
 # جلب المفاتيح
-TOKEN = os.getenv('DISCORD_TOKEN')
-API_KEY = os.getenv('GEMINI_API_KEY')
+DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
-# إعداد المكتبة القديمة المستقرة
-genai.configure(api_key=API_KEY)
+# إعداد عميل Groq
+client_ai = Groq(api_key=GROQ_API_KEY)
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = discord.Client(intents=intents)
+client_discord = discord.Client(intents=intents)
 
-@client.event
+@client_discord.event
 async def on_ready():
-    print(f'الحكيم {client.user} يحاول النهوض من جديد!')
+    print(f'تم الانتقال إلى تقنية Groq! البوت {client_discord.user} جاهز.')
 
-@client.event
+@client_discord.event
 async def on_message(message):
-    if message.author == client.user:
+    if message.author == client_discord.user:
         return
 
     async with message.channel.typing():
         try:
-            # استخدام موديل 1.5 flash بدون إضافات معقدة
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(message.content)
+            # طلب الرد من موديل Llama 3 الملحمي
+            chat_completion = client_ai.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "أنت حكيم ملحمي تملك قوة النار والبرق، عيناك حمراوان وكلامك فيه هيبة وقار. أجب باختصار مذهل."
+                    },
+                    {
+                        "role": "user",
+                        "content": message.content,
+                    }
+                ],
+                model="llama3-8b-8192", # موديل سريع وذكي جداً
+            )
             
-            if response.text:
-                await message.reply(response.text)
+            response = chat_completion.choices[0].message.content
+            await message.reply(response)
+            
         except Exception as e:
-            error_msg = str(e)
-            print(f"Full Error: {error_msg}")
-            
-            # إذا كان الخطأ بسبب الموقع الجغرافي
-            if "location" in error_msg.lower():
-                await message.reply("خطأ: سيرفر Railway موجود في منطقة لا تدعمها جوجل. يجب تغيير الـ Region في Railway.")
-            elif "403" in error_msg:
-                await message.reply("خطأ 403: المفتاح مرفوض. تأكد من تفعيل Gemini API في Google Cloud.")
-            else:
-                await message.reply(f"العائق هو: {error_msg[:100]}")
+            print(f"Error: {e}")
+            await message.reply("عذراً، قواي تحتاج للراحة.. حاول مجدداً.")
 
-client.run(TOKEN)
+client_discord.run(DISCORD_TOKEN)
