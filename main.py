@@ -15,7 +15,7 @@ client_discord = discord.Client(intents=intents)
 
 @client_discord.event
 async def on_ready():
-    print(f'تم الانتقال إلى تقنية Groq! البوت {client_discord.user} جاهز.')
+    print(f'الحكيم الملحمي {client_discord.user} جاهز للرد باستخدام Groq!')
 
 @client_discord.event
 async def on_message(message):
@@ -24,19 +24,19 @@ async def on_message(message):
 
     async with message.channel.typing():
         try:
-            # طلب الرد من موديل Llama 3 الملحمي
+            # استخدام الموديل المحدث والمتاح حالياً
             chat_completion = client_ai.chat.completions.create(
                 messages=[
                     {
                         "role": "system",
-                        "content": "أنت حكيم ملحمي تملك قوة النار والبرق، عيناك حمراوان وكلامك فيه هيبة وقار. أجب باختصار مذهل."
+                        "content": "أنت حكيم ملحمي تملك قوة النار والبرق، أجب باختصار وقوة."
                     },
                     {
                         "role": "user",
                         "content": message.content,
                     }
                 ],
-                model="llama3-8b-8192", # موديل سريع وذكي جداً
+                model="llama-3.3-70b-versatile", 
             )
             
             response = chat_completion.choices[0].message.content
@@ -44,6 +44,6 @@ async def on_message(message):
             
         except Exception as e:
             print(f"Error: {e}")
-            await message.reply("عذراً، قواي تحتاج للراحة.. حاول مجدداً.")
+            await message.reply(f"واجهت مشكلة تقنية: {str(e)[:50]}")
 
 client_discord.run(DISCORD_TOKEN)
