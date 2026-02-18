@@ -5,8 +5,8 @@ import os
 # الإعدادات الأساسية
 TOKEN = os.getenv('DISCORD_TOKEN')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-# ضع هنا ID الروم الذي تريده (يمكنك جلب الـ ID بضغط كليك يمين على الروم في ديسكورد ثم Copy ID)
-OFFICIAL_CHANNEL_ID = 1473781070783713320  # استبدل هذا الرقم بـ ID الروم الخاص بك
+# الرقم الذي وضعته أنت
+OFFICIAL_CHANNEL_ID = 1473781070783713320  
 
 client_ai = Groq(api_key=GROQ_API_KEY)
 
@@ -23,8 +23,7 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # التحقق مما إذا كانت الرسالة في الروم المحدد فقط
-    # إذا أردت أن يعمل في كل الرومات، قم بإلغاء تفعيل هذا الشرط
+    # التحقق من الروم المحدد أو الخاص (DM)
     if message.channel.id != OFFICIAL_CHANNEL_ID and not isinstance(message.channel, discord.DMChannel):
         return
 
@@ -34,23 +33,28 @@ async def on_message(message):
         await message.reply("أنا بوت ذكاء اصطناعي متطور، أعمل بتقنيات مشابهة لـ ChatGPT و Gemini، صُممت لمساعدتك في البرمجة والإجابة على تساؤلاتك بدقة وسرعة.")
         return
 
+    # بداية معالجة الذكاء الاصطناعي
     async with message.channel.typing():
         try:
             chat_completion = client_ai.chat.completions.create(
                 messages=[
                     {
                         "role": "system", 
-                        "content": "أنت مساعد ذكاء اصطناعي متطور مثل ChatGPT و Gemini. خبير في البرمجة والعلوم. أجب بأسلوب ذكي وواضح."
+                        "content": "أنت مساعد ذكاء اصطناعي متطور (مثل ChatGPT و Gemini). يجب أن تجيب دائماً باللغة العربية فقط وبشكل طبيعي. ممنوع استخدام أي لغات أخرى إلا في حالة كتابة الأكواد البرمجية."
                     },
                     {"role": "user", "content": message.content}
                 ],
                 model="llama-3.3-70b-versatile",
+                temperature=0.7,
+                max_tokens=2048,
             )
             
             response = chat_completion.choices[0].message.content
-            await message.reply(response)
+            if response:
+                await message.reply(response)
+                
         except Exception as e:
             print(f"Error: {e}")
-            await message.reply("واجهت مشكلة بسيطة، جرب مرة أخرى.")
+            await message.reply("واجهت مشكلة بسيطة في معالجة طلبك، جرب مرة أخرى.")
 
 client.run(TOKEN)
