@@ -1,40 +1,45 @@
 import discord
-from google import genai
+import google.generativeai as genai
 import os
 
-# المفاتيح
+# جلب المفاتيح
 TOKEN = os.getenv('DISCORD_TOKEN')
 API_KEY = os.getenv('GEMINI_API_KEY')
 
-# إعداد المكتبة مع إجبارها على استخدام الإصدار v1 المستقر
-client_ai = genai.Client(
-    api_key=API_KEY,
-    http_options={'api_version': 'v1'} # هذه الإضافة هي المفتاح لكسر الـ 404
-)
+# إعداد المكتبة القديمة المستقرة
+genai.configure(api_key=API_KEY)
 
 intents = discord.Intents.default()
 intents.message_content = True
-client_discord = discord.Client(intents=intents)
+client = discord.Client(intents=intents)
 
-@client_discord.event
+@client.event
 async def on_ready():
-    print(f'تم تحديث المسار إلى v1! {client_discord.user} جاهز.')
+    print(f'الحكيم {client.user} يحاول النهوض من جديد!')
 
-@client_discord.event
+@client.event
 async def on_message(message):
-    if message.author == client_discord.user:
+    if message.author == client.user:
         return
 
     async with message.channel.typing():
         try:
-            # طلب المحتوى
-            response = client_ai.models.generate_content(
-                model='gemini-1.5-flash',
-                contents=message.content
-            )
-            await message.reply(response.text)
+            # استخدام موديل 1.5 flash بدون إضافات معقدة
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(message.content)
+            
+            if response.text:
+                await message.reply(response.text)
         except Exception as e:
-            print(f"ERROR: {e}")
-            await message.reply(f"لا زال هناك عائق.. النوع: {type(e).__name__}")
+            error_msg = str(e)
+            print(f"Full Error: {error_msg}")
+            
+            # إذا كان الخطأ بسبب الموقع الجغرافي
+            if "location" in error_msg.lower():
+                await message.reply("خطأ: سيرفر Railway موجود في منطقة لا تدعمها جوجل. يجب تغيير الـ Region في Railway.")
+            elif "403" in error_msg:
+                await message.reply("خطأ 403: المفتاح مرفوض. تأكد من تفعيل Gemini API في Google Cloud.")
+            else:
+                await message.reply(f"العائق هو: {error_msg[:100]}")
 
-client_discord.run(TOKEN)
+client.run(TOKEN)
