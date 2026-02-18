@@ -1,6 +1,7 @@
 import discord
 from groq import Groq
 import os
+import re
 
 # ================= إعدادات =================
 
@@ -19,32 +20,10 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 
-# ================= أدوات مساعدة =================
+# ================= أدوات =================
 
-def format_code_blocks(text: str) -> str:
-    """
-    التأكد أن الأكواد داخل code block
-    """
-    if "```" in text:
-        return text
-
-    keywords = [
-        "import ", "def ", "class ", "const ", "let ",
-        "var ", "function ", "{", "}", ";", "async ",
-        "await ", "client.", "discord."
-    ]
-
-    if any(word in text for word in keywords):
-        return f"```\n{text}\n```"
-
-    return text
-
-
-async def send_long_message(channel, content, reply_to=None):
-    """
-    تقسيم الرسائل الطويلة
-    """
-    chunks = [content[i:i + 1900] for i in range(0, len(content), 1900)]
+async def send_long(channel, text, reply_to=None):
+    chunks = [text[i:i + 1900] for i in range(0, len(text), 1900)]
 
     for chunk in chunks:
         if reply_to:
@@ -54,11 +33,35 @@ async def send_long_message(channel, content, reply_to=None):
             await channel.send(chunk)
 
 
-# ================= أحداث البوت =================
+async def send_split_response(channel, text, reply_to=None):
+    """
+    يفصل الشرح عن الأكواد ويرسلهم برسائل منفصلة
+    """
+
+    # استخراج code blocks
+    parts = re.split(r"(```.*?```)", text, flags=re.DOTALL)
+
+    first = True
+
+    for part in parts:
+        if not part.strip():
+            continue
+
+        if part.startswith("```"):  # هذا كود
+            await channel.send(part)
+        else:  # هذا شرح
+            if first and reply_to:
+                await send_long(channel, part.strip(), reply_to=reply_to)
+                first = False
+            else:
+                await send_long(channel, part.strip())
+
+
+# ================= أحداث =================
 
 @client.event
 async def on_ready():
-    print(f"✅ البوت {client.user} يعمل الآن في الروم المحدد.")
+    print(f"✅ البوت {client.user} يعمل الآن.")
 
 
 @client.event
@@ -75,12 +78,9 @@ async def on_message(message):
     # رد الهوية
     if "من انت" in content_lower or "من أنت" in content_lower or "who are you" in content_lower:
         await message.reply(
-            "أنا بوت ذكاء اصطناعي متطور، أعمل بتقنيات مشابهة لـ ChatGPT و Gemini، "
-            "صُممت لمساعدتك في البرمجة والإجابة على تساؤلاتك بدقة وسرعة."
+            "أنا بوت ذكاء اصطناعي متطور، أعمل بتقنيات مشابهة لـ ChatGPT و Gemini."
         )
         return
-
-    # ================= الذكاء الاصطناعي =================
 
     async with message.channel.typing():
         try:
@@ -90,9 +90,8 @@ async def on_message(message):
                         "role": "system",
                         "content": (
                             "أنت مساعد ذكاء اصطناعي متطور. "
-                            "أجب دائماً باللغة العربية بشكل طبيعي وواضح. "
-                            "أي كود برمجي يجب وضعه داخل ``` ``` مع تحديد اللغة إن أمكن. "
-                            "لا تستخدم أي لغة غير العربية إلا داخل الأكواد."
+                            "أجب دائماً بالعربية. "
+                            "أي كود يجب وضعه داخل ``` ``` مع تحديد اللغة."
                         ),
                     },
                     {"role": "user", "content": message.content},
@@ -105,12 +104,11 @@ async def on_message(message):
             response = chat_completion.choices[0].message.content
 
             if response:
-                response = format_code_blocks(response)
-                await send_long_message(message.channel, response, reply_to=message)
+                await send_split_response(message.channel, response, reply_to=message)
 
         except Exception as e:
             print(f"❌ Error: {e}")
-            await message.reply("واجهت مشكلة بسيطة في معالجة طلبك، جرب مرة أخرى.")
+            await message.reply("صار خطأ بسيط، جرب مرة ثانية.")
 
 
 client.run(TOKEN)
