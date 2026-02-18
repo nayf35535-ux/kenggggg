@@ -1,50 +1,39 @@
 import discord
-import google.generativeai as genai
+from google import genai
 import os
+import asyncio
 
-# جلب المفاتيح من Railway
+# جلب المفاتيح
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-# إعداد Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-
-# جربنا flash-latest لأنه الأكثر توافقاً
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+# إعداد العميل الجديد
+client_ai = genai.Client(api_key=GEMINI_API_KEY)
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = discord.Client(intents=intents)
+client_discord = discord.Client(intents=intents)
 
-@client.event
+@client_discord.event
 async def on_ready():
-    print(f'البوت الملحمي {client.user} متصل ومستعد!')
+    print(f'الحكيم الملحمي {client_discord.user} عاد من جديد!')
 
-@client.event
+@client_discord.event
 async def on_message(message):
-    if message.author == client.user:
+    if message.author == client_discord.user:
         return
 
     async with message.channel.typing():
         try:
-            # إرسال السؤال لـ Gemini
-            prompt = f"أنت حكيم ملحمي، أجب باختصار: {message.content}"
-            response = model.generate_content(prompt)
+            # استخدام الطريقة الجديدة للمكتبة المحدثة
+            response = client_ai.models.generate_content(
+                model="gemini-1.5-flash", 
+                contents=f"أنت حكيم ملحمي بقوة النار والبرق، أجب باختصار: {message.content}"
+            )
             
-            if response.text:
-                await message.reply(response.text)
-            else:
-                await message.reply("توقفت قواي عن التفكير حالياً..")
-                
+            await message.reply(response.text)
         except Exception as e:
-            # طباعة الخطأ في الـ Logs لمعرفته بدقة
-            print(f"ERROR: {e}")
-            # إذا فشل الموديل الأول، سنجرب الموديل الاحتياطي
-            try:
-                backup_model = genai.GenerativeModel('gemini-pro')
-                res = backup_model.generate_content(message.content)
-                await message.reply(res.text)
-            except:
-                await message.reply(f"لا زلت أواجه خطأ 404، تأكد من صلاحية الـ API Key.")
+            print(f"ERROR DETAILS: {e}")
+            await message.reply(f"لا زال الظلام يحيط بي.. الخطأ: {str(e)[:50]}")
 
-client.run(DISCORD_TOKEN)
+client_discord.run(DISCORD_TOKEN)
